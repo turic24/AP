@@ -1,24 +1,473 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Тестовый сайт</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquid Glass Watermark</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Liquid Watermark">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; }
+        .drop-zone { 
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s;
+        }
+        .drop-zone.active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        canvas { 
+            max-width: 100%;
+            height: auto;
+            cursor: move;
+            touch-action: none;
+        }
+        #canvas-container {
+            position: relative;
+            display: inline-block;
+        }
+    </style>
 </head>
-<body>
-  <div class="card">
-    <h1></h1>
-    <p>ХУЙХУЙХУЙХУЙХУЙХУЙХУЙ</p>
+<body class="bg-gray-50 min-h-screen p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl md:text-4xl font-black text-gray-900 mb-8 text-center">Liquid Glass Watermark</h1>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Controls Panel -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Настройки</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Текст</label>
+                            <input type="text" id="textInput" value="RENGEV" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                Размер: <span id="scaleValue">1.0</span>x
+                            </label>
+                            <input type="range" id="scaleSlider" min="0.3" max="3" step="0.1" value="1" 
+                                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                Прозрачность: <span id="opacityValue">100</span>%
+                            </label>
+                            <input type="range" id="opacitySlider" min="0" max="100" step="5" value="100" 
+                                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        
+                        <button id="downloadBtn" 
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled>
+                            Скачать изображение
+                        </button>
+                        
+                        <button id="resetBtn" 
+                                class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled>
+                            Сбросить
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p class="text-sm text-blue-800">
+                        💡 <strong>Подсказка:</strong> Перетаскивайте водяной знак мышкой или пальцем по изображению
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Canvas Area -->
+            <div class="lg:col-span-2">
+                <div id="uploadZone" class="drop-zone bg-white rounded-xl shadow-lg p-12 text-center cursor-pointer">
+                    <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <h3 class="text-xl font-bold text-gray-700 mb-2">Загрузите изображение</h3>
+                    <p class="text-gray-500 mb-4">или перетащите файл сюда</p>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition">
+                        Выбрать файл
+                    </button>
+                    <input type="file" id="fileInput" accept="image/*" class="hidden">
+                </div>
+                
+                <div id="canvasWrapper" class="hidden mt-6">
+                    <div id="canvas-container" class="bg-white rounded-xl shadow-lg p-4 inline-block">
+                        <canvas id="canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <button id="btn">Клик</button>
-    <p class="counter">
-      Кликов: <span id="count">0</span>
-    </p>
+    <script>
+        // State
+        let state = {
+            image: null,
+            watermarkX: 0,
+            watermarkY: 0,
+            text: 'RENGEV',
+            scale: 1,
+            opacity: 1,
+            isDragging: false,
+            dragStartX: 0,
+            dragStartY: 0,
+            offsetX: 0,
+            offsetY: 0
+        };
 
-    <p id="message"></p>
-  </div>
+        // Elements
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const textInput = document.getElementById('textInput');
+        const scaleSlider = document.getElementById('scaleSlider');
+        const scaleValue = document.getElementById('scaleValue');
+        const opacitySlider = document.getElementById('opacitySlider');
+        const opacityValue = document.getElementById('opacityValue');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
 
-  <script src="script.js"></script>
+        // Draw watermark function
+        function drawWatermark(ctx, x, y, scale, opacity) {
+            const text = state.text;
+            const baseFontSize = 48;
+            const fontSize = baseFontSize * scale;
+            
+            ctx.font = `900 ${fontSize}px 'Inter'`;
+            
+            // Measure text with letter spacing
+            const letterSpacing = fontSize * 0.05;
+            let totalWidth = 0;
+            for (let i = 0; i < text.length; i++) {
+                totalWidth += ctx.measureText(text[i]).width;
+                if (i < text.length - 1) totalWidth += letterSpacing;
+            }
+            
+            // Dimensions
+            const paddingX = 50 * scale;
+            const paddingY = 25 * scale;
+            const capsuleWidth = totalWidth + paddingX * 2;
+            const capsuleHeight = fontSize + paddingY * 2;
+            const borderRadius = 100 * scale;
+            
+            // --- 1. SHADOW (External) ---
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+            ctx.shadowBlur = 25 * scale;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 12 * scale;
+            
+            ctx.fillStyle = 'rgba(0,0,0,0)'; 
+            ctx.beginPath();
+            ctx.roundRect(x, y, capsuleWidth, capsuleHeight, borderRadius);
+            ctx.fill();
+            ctx.restore();
+
+            // --- 2. REFRACTION / MAGNIFICATION ---
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            
+            ctx.beginPath();
+            ctx.roundRect(x, y, capsuleWidth, capsuleHeight, borderRadius);
+            ctx.clip(); 
+
+            if (state.image) {
+                // To simulate refraction: draw a portion of the original image that is 
+                // slightly smaller than the watermark area, scaled up.
+                // This creates a "magnifying lens" effect.
+                
+                const zoomFactor = 0.15; // 15% zoom
+                
+                // Source rectangle (what we capture from underlying image)
+                // We shrink the capture area relative to center
+                const sx = x + (capsuleWidth * zoomFactor * 0.5);
+                const sy = y + (capsuleHeight * zoomFactor * 0.5);
+                const sw = capsuleWidth * (1 - zoomFactor);
+                const sh = capsuleHeight * (1 - zoomFactor);
+
+                // Apply mild blur to simulate thick glass, but keep it clearer than before
+                // Increased contrast slightly for pop
+                ctx.filter = `blur(${3 * scale}px) saturate(1.1) contrast(1.05)`;
+                
+                // Draw clipped and zoomed
+                // Destination is full watermark size (x, y, capsuleWidth, capsuleHeight)
+                ctx.drawImage(state.image, sx, sy, sw, sh, x, y, capsuleWidth, capsuleHeight);
+            }
+            ctx.restore();
+
+            // --- 3. GLASS SURFACE (Gloss) ---
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            
+            // Much more subtle gradient for clear glass
+            const gradient = ctx.createLinearGradient(x, y, x + capsuleWidth, y + capsuleHeight);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.2)');    // Subtle highlight top-left
+            gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.02)'); // Almost clear middle
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0.05)');   // Subtle fill
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.roundRect(x, y, capsuleWidth, capsuleHeight, borderRadius);
+            ctx.fill();
+            
+            // --- 4. RIM LIGHTING & HIGHLIGHTS ---
+            // Sharp white inner rim on top/left
+            ctx.lineWidth = 1.5 * scale;
+            const borderGradient = ctx.createLinearGradient(x, y, x + capsuleWidth, y + capsuleHeight);
+            borderGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');  // Sharp bright edge
+            borderGradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.1)');
+            borderGradient.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+            
+            ctx.strokeStyle = borderGradient;
+            ctx.beginPath();
+            ctx.roundRect(x, y, capsuleWidth, capsuleHeight, borderRadius);
+            ctx.stroke();
+            
+            ctx.restore();
+
+            // --- 5. TEXT ---
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            
+            // Deep shadow for contrast against disparate backgrounds
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+            ctx.shadowBlur = 6 * scale;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 2 * scale;
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
+            ctx.textBaseline = 'middle';
+            
+            let currentX = x + paddingX;
+            const textY = y + capsuleHeight / 2;
+            
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const charWidth = ctx.measureText(char).width;
+                ctx.fillText(char, currentX, textY);
+                currentX += charWidth + letterSpacing;
+            }
+            ctx.restore();
+        }
+
+        // Render canvas
+        function render() {
+            if (!state.image) return;
+            
+            canvas.width = state.image.width;
+            canvas.height = state.image.height;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(state.image, 0, 0);
+            
+            drawWatermark(ctx, state.watermarkX, state.watermarkY, state.scale, state.opacity);
+        }
+
+        // Load image
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    state.image = img;
+                    state.watermarkX = img.width * 0.05;
+                    state.watermarkY = img.height * 0.05;
+                    
+                    uploadZone.classList.add('hidden');
+                    canvasWrapper.classList.remove('hidden');
+                    downloadBtn.disabled = false;
+                    resetBtn.disabled = false;
+                    
+                    render();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Event listeners
+        uploadZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) loadImage(e.target.files[0]);
+        });
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('active');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('active');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('active');
+            if (e.dataTransfer.files[0]) loadImage(e.dataTransfer.files[0]);
+        });
+
+        textInput.addEventListener('input', (e) => {
+            state.text = e.target.value || 'RENGEV';
+            render();
+        });
+
+        scaleSlider.addEventListener('input', (e) => {
+            state.scale = parseFloat(e.target.value);
+            scaleValue.textContent = state.scale.toFixed(1);
+            render();
+        });
+
+        opacitySlider.addEventListener('input', (e) => {
+            state.opacity = parseInt(e.target.value) / 100;
+            opacityValue.textContent = e.target.value;
+            render();
+        });
+
+        // Drag and drop watermark
+        function getEventPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function isInsideWatermark(x, y) {
+            const text = state.text;
+            const fontSize = 48 * state.scale;
+            ctx.font = `900 ${fontSize}px 'Inter'`;
+            
+            const letterSpacing = fontSize * 0.09;
+            let totalWidth = 0;
+            for (let i = 0; i < text.length; i++) {
+                totalWidth += ctx.measureText(text[i]).width;
+                if (i < text.length - 1) totalWidth += letterSpacing;
+            }
+            
+            const paddingX = 50 * state.scale;
+            const paddingY = 25 * state.scale;
+            const capsuleWidth = totalWidth + paddingX * 2;
+            const capsuleHeight = fontSize + paddingY * 2;
+            
+            return x >= state.watermarkX && x <= state.watermarkX + capsuleWidth &&
+                   y >= state.watermarkY && y <= state.watermarkY + capsuleHeight;
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const pos = getEventPos(e);
+            if (isInsideWatermark(pos.x, pos.y)) {
+                state.isDragging = true;
+                state.offsetX = pos.x - state.watermarkX;
+                state.offsetY = pos.y - state.watermarkY;
+                canvas.style.cursor = 'grabbing';
+            }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const pos = getEventPos(e);
+            if (isInsideWatermark(pos.x, pos.y)) {
+                state.isDragging = true;
+                state.offsetX = pos.x - state.watermarkX;
+                state.offsetY = pos.y - state.watermarkY;
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (state.isDragging) {
+                const pos = getEventPos(e);
+                state.watermarkX = pos.x - state.offsetX;
+                state.watermarkY = pos.y - state.offsetY;
+                render();
+            } else {
+                const pos = getEventPos(e);
+                canvas.style.cursor = isInsideWatermark(pos.x, pos.y) ? 'grab' : 'move';
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (state.isDragging) {
+                const pos = getEventPos(e);
+                state.watermarkX = pos.x - state.offsetX;
+                state.watermarkY = pos.y - state.offsetY;
+                render();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            state.isDragging = false;
+            canvas.style.cursor = 'move';
+        });
+
+        canvas.addEventListener('touchend', () => {
+            state.isDragging = false;
+        });
+
+        document.addEventListener('mouseup', () => {
+            state.isDragging = false;
+            canvas.style.cursor = 'move';
+        });
+
+        // Download
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = `watermarked-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+        });
+
+        // Reset
+        resetBtn.addEventListener('click', () => {
+            state = {
+                image: null,
+                watermarkX: 0,
+                watermarkY: 0,
+                text: 'RENGEV',
+                scale: 1,
+                opacity: 1,
+                isDragging: false,
+                dragStartX: 0,
+                dragStartY: 0,
+                offsetX: 0,
+                offsetY: 0
+            };
+            
+            textInput.value = 'RENGEV';
+            scaleSlider.value = 1;
+            scaleValue.textContent = '1.0';
+            opacitySlider.value = 100;
+            opacityValue.textContent = '100';
+            
+            uploadZone.classList.remove('hidden');
+            canvasWrapper.classList.add('hidden');
+            downloadBtn.disabled = true;
+            resetBtn.disabled = true;
+            fileInput.value = '';
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+    </script>
 </body>
 </html>
