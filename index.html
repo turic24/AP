@@ -50,12 +50,19 @@
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-colors duration-200">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-bold text-gray-800 dark:text-white">Настройки</h2>
-                        <button id="themeToggle" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                            <!-- Sun Icon -->
-                            <svg id="sunIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                            <!-- Moon Icon -->
-                            <svg id="moonIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-                        </button>
+                        <div class="flex items-center space-x-2">
+                            <button id="colorToggle" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" title="Переключить цвет текста">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                                </svg>
+                            </button>
+                            <button id="themeToggle" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                <!-- Sun Icon -->
+                                <svg id="sunIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                                <!-- Moon Icon -->
+                                <svg id="moonIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="space-y-4">
@@ -132,7 +139,8 @@
             dragStartX: 0,
             dragStartY: 0,
             offsetX: 0,
-            offsetY: 0
+            offsetY: 0,
+            isDarkText: false
         };
 
         let renderRequestId = null;
@@ -150,6 +158,7 @@
         const opacityValue = document.getElementById('opacityValue');
         const downloadBtn = document.getElementById('downloadBtn');
         const resetBtn = document.getElementById('resetBtn');
+        const colorToggle = document.getElementById('colorToggle');
 
         // Draw watermark function
         function drawWatermark(ctx, x, y, scale, opacity) {
@@ -236,19 +245,30 @@
             ctx.fill();
             
             // --- 4. RIM LIGHTING & HIGHLIGHTS ---
-            // Thinner, smoother border (0.8 scale)
+            // Balanced, symmetrical border for uniform look
             ctx.lineWidth = 0.8 * scale;
-            const borderGradient = ctx.createLinearGradient(x, y, x + capsuleWidth, y + capsuleHeight);
-            // Reduced opacity for smoother look
-            borderGradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');  
-            borderGradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.1)');
-            borderGradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.05)');
-            borderGradient.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
+            
+            // Create a symmetrical gradient for the border
+            const borderGradient = ctx.createLinearGradient(x, y, x + capsuleWidth, y);
+            borderGradient.addColorStop(0, 'rgba(255, 255, 255, 0.45)');   // Left highlight
+            borderGradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.15)'); // Fade in
+            borderGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)'); // Dim middle
+            borderGradient.addColorStop(0.8, 'rgba(255, 255, 255, 0.15)'); // Fade out
+            borderGradient.addColorStop(1, 'rgba(255, 255, 255, 0.45)');   // Right highlight
             
             ctx.strokeStyle = borderGradient;
             ctx.beginPath();
             ctx.roundRect(x, y, capsuleWidth, capsuleHeight, borderRadius);
             ctx.stroke();
+
+            // Add an additional subtle inner glow for more depth and uniformity
+            ctx.save();
+            ctx.lineWidth = 1.2 * scale;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.beginPath();
+            ctx.roundRect(x + 1 * scale, y + 1 * scale, capsuleWidth - 2 * scale, capsuleHeight - 2 * scale, borderRadius);
+            ctx.stroke();
+            ctx.restore();
             
             ctx.restore();
 
@@ -260,12 +280,12 @@
             // color: rgba(255, 255, 255, 0.5);
             // text-shadow: 0px 4px 14px rgba(0, 0, 0, 0.42);
             
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.42)';
+            ctx.shadowColor = state.isDarkText ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.42)';
             ctx.shadowBlur = 14 * scale;
             ctx.shadowOffsetX = 0;
             ctx.shadowOffsetY = 4 * scale;
             
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.fillStyle = state.isDarkText ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255, 255, 255, 0.5)';
             ctx.textBaseline = 'middle';
             
             let currentX = x + paddingX;
@@ -475,7 +495,8 @@
                 dragStartX: 0,
                 dragStartY: 0,
                 offsetX: 0,
-                offsetY: 0
+                offsetY: 0,
+                isDarkText: false
             };
             
             textInput.value = 'RENGEV';
@@ -514,6 +535,11 @@
         themeToggle.addEventListener('click', () => {
             const isDark = !html.classList.contains('dark');
             updateTheme(isDark);
+        });
+
+        colorToggle.addEventListener('click', () => {
+            state.isDarkText = !state.isDarkText;
+            requestRender();
         });
     </script>
 </body>
